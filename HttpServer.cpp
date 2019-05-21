@@ -286,6 +286,8 @@ int HttpServer::handleReq(const evhttp_cmd_type& method, const std::string& uri,
 		std::map<int, ConGroupSec> sec;
 		std::set<int> index;
 		std::string group;
+
+		std::map<std::string, ConGroupMargin> margins;
 		switch (m_uri[uri])
 		{
 		case COMMON:
@@ -295,6 +297,24 @@ int HttpServer::handleReq(const evhttp_cmd_type& method, const std::string& uri,
 		case ARCHIVING:
 			break; 
 		case MARGINS:
+			if (Utils::getInstance().parseFromJsonToMargins(body, margins, group))
+			{
+				if (m_mt4Conn.updateGroupSec(group, sec, index))
+				{
+					Logger::getInstance()->info("update group securities success.");
+					response = "update group securities success.";
+				}
+				else
+				{
+					response = "update group securities failed.";
+					res = SERVER_ERROR;
+				}
+			}
+			else
+			{
+				response = "param parse error.";
+				res = PARAM_INVALID;
+			}
 			break;
 		case SECURITIES:
 			if (Utils::getInstance().parseFromJsonToSec(body, sec, index, group))
@@ -341,6 +361,25 @@ int HttpServer::handleReq(const evhttp_cmd_type& method, const std::string& uri,
 		case ARCHIVING:
 			break;
 		case MARGINS:
+			if (uriArgs.find("Group") != uriArgs.end())
+			{
+				conGroup = m_mt4Conn.getGroupCfg(uriArgs.at("Group"));
+				size = conGroup.secmargins_total;
+				if (Utils::getInstance().parseFromMarginToJson(conGroup.group, conGroup.secmargins, size, response))
+				{
+					Logger::getInstance()->info("get group margins success.");
+				}
+				else
+				{
+					response = "update group margins failed.";
+					res = SERVER_ERROR;
+				}
+			}
+			else
+			{
+				response = "param parse error.";
+				res = PARAM_INVALID;
+			}
 			break;
 		case SECURITIES:
 			if (uriArgs.find("Group") != uriArgs.end())

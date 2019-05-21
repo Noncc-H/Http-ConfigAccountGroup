@@ -213,4 +213,39 @@ bool DirectConn::updateGroupSec(const std::string& group,const std::map<int, Con
 }
 
 
+bool DirectConn::updateGroupMargins(const std::string& group, const std::map<std::string, ConGroupMargin>& cfgGroupMargin)
+{
+	ConGroup cfgGroup(std::move(getGroupCfg(group)));
+	int oldSize = cfgGroup.secmargins_total;
 
+	std::set<std::string> exclusiveSymbol;
+	if (group.compare(cfgGroup.group) == 0)
+	{
+		for (int i = 0; i < cfgGroup.secmargins_total; i++)
+		{
+			if (cfgGroupMargin.find(cfgGroup.secmargins[i].symbol) != cfgGroupMargin.end())
+			{
+				cfgGroup.secmargins[i] = cfgGroupMargin.at(cfgGroup.secmargins[i].symbol);
+				exclusiveSymbol.insert(cfgGroup.secmargins[i].symbol);
+			}
+		}
+		for (auto& m : cfgGroupMargin)
+		{
+			if (exclusiveSymbol.find(m.first) != exclusiveSymbol.end())
+				continue;
+			cfgGroup.secmargins[oldSize++] = m.second;
+		}
+	}
+	else
+	{
+		return false;
+	}
+
+	int res = 0;
+	if (RET_OK != (res = m_managerInter->CfgUpdateGroup(&cfgGroup)))
+	{
+		Logger::getInstance()->error("update group margins failed.{}", m_managerInter->ErrorDescription(res));
+		return false;
+	}
+	return true;
+}

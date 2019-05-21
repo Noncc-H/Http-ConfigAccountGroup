@@ -7,9 +7,6 @@
 #include "MT4ManagerAPI.h"
 
 
-struct TradeRecord;
-struct ConGroupSec;
-
 class Utils
 {
 public:
@@ -25,6 +22,9 @@ public:
 
 	bool parseFromJsonToSec(std::string json, std::map<int,ConGroupSec>& sec, std::set<int>& index, std::string& group);
 	bool parseFromSecToJson(const std::string& group, ConGroupSec sec[], int size, std::string& json);
+
+	bool parseFromJsonToMargins(std::string json, std::map<std::string, ConGroupMargin>& margins, std::string& group);
+	bool parseFromMarginToJson(const std::string& group, ConGroupMargin margins[], int size, std::string& json);
 
 private:
 	Utils();

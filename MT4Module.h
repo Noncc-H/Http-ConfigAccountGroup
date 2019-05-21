@@ -3,6 +3,7 @@
 #include "Config.h"
 #include <set>
 
+//using URI = enum { COMMON, PERMISSIONS, ARCHIVING, MARGINS, SECURITIES, SYMBOLS, REPORTS };
 class DirectConn
 {
 public:
@@ -22,8 +23,10 @@ public:
 
 	bool createConnToMT4();
 
-	bool updateGroupSec(const std::string& group, const std::map<int, ConGroupSec>& cfgGroupSec,std::set<int> index);
 	ConGroup getGroupCfg(std::string group);
+	bool updateGroupSec(const std::string& group, const std::map<int, ConGroupSec>& cfgGroupSec,std::set<int> index);
+	
+	bool updateGroupMargins(const std::string& group, const std::map<std::string, ConGroupMargin>& cfgGroupMargin);
 
 private:
 	/************************************************

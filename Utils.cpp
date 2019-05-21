@@ -288,3 +288,119 @@ bool Utils::parseFromSecToJson(const std::string& group, ConGroupSec sec[], int 
 
 	return true;
 }
+
+
+bool Utils::parseFromJsonToMargins(std::string json, std::map<std::string, ConGroupMargin>& margins, std::string& group)
+{
+	using namespace rapidjson;
+	Document doc;
+
+	if (doc.Parse(json.c_str()).HasParseError())
+	{
+		return false;
+	}
+
+	if (doc.HasMember("Group") && doc["Group"].IsString())
+	{
+		group = doc["Group"].GetString();
+	}
+	else
+	{
+		return false;
+	}
+
+	if (doc.HasMember("GroupMargin") && doc["GroupMargin"].IsArray())
+	{
+		for (auto& v : doc["GroupMargin"].GetArray())
+		{
+			ConGroupMargin tmp = { 0 };
+
+			if (v.HasMember("symbol") && v["symbol"].IsString)
+			{
+				memcpy(tmp.symbol, v["symbol"].GetString(), v["symbol"].Size());
+				margins[v["symbol"].GetString()] = tmp;
+			}
+			else
+			{
+				return false;
+			}
+
+			auto addDouble = [&](GenericValue<rapidjson::UTF8<char>, rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator>> &obj, std::string key, double& value)
+			{
+				if (obj.HasMember(key.c_str()) && obj[key.c_str()].IsDouble())
+				{
+					value = obj[key.c_str()].GetDouble();
+					return true;
+				}
+				else if (obj.HasMember(key.c_str()) && obj[key.c_str()].IsInt())
+				{
+					value = obj[key.c_str()].GetInt();
+					return true;
+				}
+				else
+					return false;
+			};
+
+			if (addDouble(v, "swap_short", margins[v["swap_short"].GetString()].swap_short) &&
+				addDouble(v, "swap_long", margins[v["swap_long"].GetString()].swap_long) &&
+				addDouble(v, "margin_divider", margins[v["margin_divider"].GetString()].margin_divider))
+			{
+
+			}
+			else
+			{
+				return false;
+			}
+		}
+	}
+	else
+		return false;
+
+	return true;
+}
+
+bool Utils::parseFromMarginToJson(const std::string& group, ConGroupMargin margins[], int size, std::string& json)
+{
+	if (margins == nullptr)
+		return false;
+
+	using namespace rapidjson;
+
+	rapidjson::StringBuffer strBuf;
+	rapidjson::Writer<rapidjson::StringBuffer> w(strBuf);
+	w.StartObject();
+
+	w.Key("Group");
+	w.String(group.c_str());
+
+	w.Key("GroupMargin");
+	w.StartArray();
+
+	for (int i = 0; i < size; i++)
+	{
+		w.StartObject();
+
+		w.Key("symbol");
+		w.String(margins[i].symbol);
+
+		w.Key("swap_short");
+		w.Double(margins[i].swap_short);
+
+		w.Key("swap_long");
+		w.Double(margins[i].swap_long);
+
+		w.Key("margin_divider");
+		w.Double(margins[i].margin_divider);
+
+		w.EndObject();
+	}
+
+	w.EndArray();
+
+	w.EndObject();
+
+	json = strBuf.GetString();
+
+	return true;
+}
+
