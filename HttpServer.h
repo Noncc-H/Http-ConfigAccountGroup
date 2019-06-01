@@ -9,7 +9,7 @@
 #include "MT4Module.h"
 
 using STATUS = enum { OK, BAD_URL, BAD_METHOD, PARAM_INVALID, SERVER_ERROR};
-using URI = enum {COMMON, PERMISSIONS, ARCHIVING, MARGINS, SECURITIES, SYMBOLS, REPORTS};
+using URI = enum {COMMON = 1, PERMISSIONS, ARCHIVING, MARGINS, SECURITIES, SYMBOLS, REPORTS, COMMON_GROUPS, COMMON_SECURITIES};
 
 class HttpServer
 {
@@ -27,6 +27,32 @@ private:
 	static void cbFunc(struct evhttp_request *, void *args);
 	bool parseReq(struct evhttp_request* req, evhttp_cmd_type& method, std::string& uri, std::map<std::string, std::string>& uriArgs , std::string& body);
 	int  handleReq(const evhttp_cmd_type& method, const std::string& uri, const std::map<std::string, std::string>& uriArgs, const std::string& body,std::string& response);
+
+	int getGroupsNames(std::string& response);
+	int getSecuritiesNames(std::string& response);
+
+	int setGroupSecurities(const std::string& body, std::string& response);
+	int getGroupSecurities(const std::map<std::string, std::string>& uriArgs, std::string& response);
+
+	int setGroupCommon(const std::string& body, std::string& response);
+	int getGroupCommon(const std::map<std::string, std::string>& uriArgs, std::string& response);
+
+	int setGroupSymbols(const std::string& body, std::string& response);
+	int getGroupSymbols(const std::map<std::string, std::string>& uriArgs, std::string& response);
+
+	int getGroupMargins(const std::map<std::string, std::string>& uriArgs, std::string& response);
+	int setGroupMargins(const std::string& body, std::string& response);
+
+	int getGroupArchive(const std::map<std::string, std::string>& uriArgs, std::string& response);
+	int setGroupArchive(const std::string& body, std::string& response);
+
+	int getGroupReport(const std::map<std::string, std::string>& uriArgs, std::string& response);
+	int setGroupReport(const std::string& body, std::string& response);
+
+	int getGroupPermission(const std::map<std::string, std::string>& uriArgs, std::string& response);
+	int setGroupPermission(const std::string& body, std::string& response);
+	
+	
 private:
 	struct event_base* m_evBase;
 	struct evhttp* m_http;

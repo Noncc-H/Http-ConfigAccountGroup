@@ -1,6 +1,7 @@
 #pragma once
 #include "MT4ManagerAPI.h"
 #include "Config.h"
+#include "Utils.h"
 #include <set>
 
 //using URI = enum { COMMON, PERMISSIONS, ARCHIVING, MARGINS, SECURITIES, SYMBOLS, REPORTS };
@@ -23,10 +24,28 @@ public:
 
 	bool createConnToMT4();
 
-	ConGroup getGroupCfg(std::string group);
+	ConGroup getGroupCfg(const std::string& group);
 	bool updateGroupSec(const std::string& group, const std::map<int, ConGroupSec>& cfgGroupSec,std::set<int> index);
 	
-	bool updateGroupMargins(const std::string& group, const std::map<std::string, ConGroupMargin>& cfgGroupMargin);
+	bool updateGroupSymbol(const std::string& group, const std::map<std::string, ConGroupMargin>& cfgGroupMargin);
+
+	GroupCommon getGroupCommon(const std::string& group);
+	bool updateGroupCommon(const std::string& group, const GroupCommon& common);
+
+	bool getGroupNames(std::vector<std::string>& groups);
+	int getSecuritiesNames(ConSymbolGroup securities[]); //return value:0 success. otherwise failed.
+
+	GroupMargin getGroupMargin(const std::string& group);
+	bool updateGroupMargin(const std::string group, const GroupMargin& margin);
+
+	GroupArchive getGroupArchive(const std::string& group);
+	bool updateGroupArchive(const std::string group, const GroupArchive& archive);
+
+	GroupReport getGroupReport(const std::string& group);
+	bool upateGroupReport(const std::string group, const GroupReport& report);
+
+	GroupPermission getGroupPermission(const std::string& group);
+	bool updateGroupPerssion(const std::string group, const GroupPermission& permission);
 
 private:
 	/************************************************
