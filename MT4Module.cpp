@@ -100,10 +100,17 @@ int DirectConn::mt4Conn(const char* host)
 
 bool DirectConn::mt4IsConnected()
 {
-	if (m_managerInter->IsConnected() != 0)
-		return true;
-	else
-		return false;
+	try {
+		if (m_managerInter->IsConnected() != 0)
+			return true;
+		else
+			return false;
+	}
+	catch (...)
+	{
+		Logger::getInstance()->error("IsConnected exception...");
+	}
+	return true;
 }
 
 bool DirectConn::createConnToMT4()
@@ -118,6 +125,7 @@ bool DirectConn::createConnToMT4()
 bool DirectConn::heartBeat()
 {
 	return m_managerInter->Ping();
+	return true;
 }
 
 void DirectConn::watchConntoMT4()
@@ -246,6 +254,7 @@ bool DirectConn::updateGroupSec(const std::string& group,const std::map<int, Con
 	ConGroup cfgGroup(std::move(getGroupCfg(group)));
 	int size = sizeof(cfgGroup.secgroups) / sizeof(ConGroupSec);
 
+	int tmpIndex = 0;
 	if (group.compare(cfgGroup.group) == 0)
 	{
 		for (int i = 0; i < size; i++)
@@ -253,6 +262,7 @@ bool DirectConn::updateGroupSec(const std::string& group,const std::map<int, Con
 			if (index.find(i) != index.end())
 			{
 				cfgGroup.secgroups[i] = cfgGroupSec.at(i);
+				tmpIndex = i;//log use
 			}
 		}
 	}
@@ -264,7 +274,8 @@ bool DirectConn::updateGroupSec(const std::string& group,const std::map<int, Con
 	int res = 0;
 	if (RET_OK != (res = m_managerInter->CfgUpdateGroup(&cfgGroup)))
 	{
-		Logger::getInstance()->error("update group securities failed.{}", m_managerInter->ErrorDescription(res));
+		Logger::getInstance()->error("update group securities failed.{}, group:{},index:{}",
+			m_managerInter->ErrorDescription(res), group, tmpIndex);
 		return false;
 	}
 	return true;

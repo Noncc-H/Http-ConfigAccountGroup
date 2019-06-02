@@ -3,8 +3,10 @@
 #include "Config.h"
 #include "Utils.h"
 #include <map>
+#include <unordered_map>
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
+#include "SqliteClient.h"
 
 HttpServer::HttpServer()
 {
@@ -28,6 +30,10 @@ HttpServer::HttpServer()
 	std::string reports = Config::getInstance().getHTTPConf().find("account-group-reports")->second;
 	std::string common_groups = Config::getInstance().getHTTPConf().find("common-account-groups")->second;
 	std::string common_securities = Config::getInstance().getHTTPConf().find("common-symbol-groups")->second;
+	std::string securities_auto = Config::getInstance().getHTTPConf().find("account-group-securities-auto")->second;
+	std::string securities_auto_get = securities_auto + "-get";
+	std::string securities_auto_set = securities_auto + "-set";
+	
 	m_uri = { {common, COMMON},
 	{permissions, PERMISSIONS},
 	{archiving, ARCHIVING},
@@ -36,7 +42,9 @@ HttpServer::HttpServer()
 	{symbols, SYMBOLS},
 	{reports, REPORTS},
 	{common_groups, COMMON_GROUPS},
-	{common_securities, COMMON_SECURITIES} };
+	{common_securities, COMMON_SECURITIES},
+	{securities_auto_get, SECURITIES_AUTO_GET},
+	{securities_auto_set, SECURITIES_AUTO_SET} };
 }
 
 HttpServer::~HttpServer()
@@ -161,9 +169,9 @@ void HttpServer::cbFunc(struct evhttp_request *req, void *args)
 		Logger::getInstance()->error("response: method not allowed！");
 	}
 	break;
-	case PARAM_INVALID://处理失败
+	case PARAM_INVALID:
 	{
-		evhttp_send_reply(req, 400, "Bad Request", evb);//此种情况可以将请求下发到dbcache，处理结果根据返回值判断
+		evhttp_send_reply(req, 400, "Bad Request", evb);
 		Logger::getInstance()->error("response: bad request！");
 	}
 	break;
@@ -346,6 +354,12 @@ int HttpServer::handleReq(const evhttp_cmd_type& method, const std::string& uri,
 			break;
 		case COMMON_SECURITIES:
 			res = getSecuritiesNames(response);
+			break;
+		case SECURITIES_AUTO_GET:  //get
+			res = getAllGroupsSecurities(response);
+			break;
+		case SECURITIES_AUTO_SET:  //set
+			res = setAllGroupsSecurities(response);
 			break;
 		default:
 			response = "bad url";
@@ -759,4 +773,122 @@ int HttpServer::setGroupPermission(const std::string& body, std::string& respons
 		res = PARAM_INVALID;
 	}
 	return res;
+}
+
+int HttpServer::getAllGroupsSecurities(std::string& response)
+{
+	std::map<int, std::string> securitiesMap;
+	ConSymbolGroup securities[MAX_SEC_GROUPS] = { 0 };
+	if (0 == m_mt4Conn.getSecuritiesNames(securities))
+	{
+		int size = sizeof(securities) / sizeof(ConSymbolGroup);
+		for (int i = 0; i < size; i++)
+		{
+			securitiesMap[i] = securities[i].name;
+		}
+	}
+	else
+	{
+		response = "operate failed.";
+		return SERVER_ERROR;
+	}
+
+	std::vector<std::string> common_groups;
+	if (m_mt4Conn.getGroupNames(common_groups))
+	{
+		for (auto &group : common_groups)
+		{
+			ConGroup conGroup = { 0 };
+			conGroup = m_mt4Conn.getGroupCfg(group);
+			int size = sizeof(conGroup.secgroups) / sizeof(ConGroupSec);
+			for (int i = 0; i < size; i++)
+			{
+				if (!SqliteClient::getInstance().add(i, securitiesMap[i], conGroup))
+				{
+					response = "operate failed.";
+					return SERVER_ERROR;
+				}
+			}
+		}
+		response = "operate success";
+		return OK;
+	}
+	else
+	{
+		response = "operate failed.";
+		return SERVER_ERROR;
+	}
+}
+
+int HttpServer::setAllGroupsSecurities(std::string& response)
+{
+	//std::unordered_map<std::string, std::vector<std::string>> records;
+	std::vector<std::vector<std::string>> records;
+	if(SqliteClient::getInstance().getAllRecords(records))
+	{
+		for (auto &r : records)
+		{
+			ConGroupSec cs = {0};
+			cs.show = std::stoi(r.at(3));
+			cs.trade = std::stoi(r.at(4));
+			cs.confirmation = std::stoi(r.at(5));
+			cs.execution = std::stoi(r.at(6));
+			cs.spread_diff = std::stoi(r.at(7));
+			cs.freemargin_mode = std::stoi(r.at(8));
+			cs.ie_deviation = std::stoi(r.at(9));
+			cs.ie_quick_mode = std::stoi(r.at(10));
+			cs.lot_min = std::stoi(r.at(11));
+			cs.lot_max = std::stoi(r.at(12));
+			cs.lot_step = std::stoi(r.at(13));
+			cs.comm_base = std::stod(r.at(14));
+			cs.comm_type = std::stoi(r.at(15));
+			cs.comm_lots = std::stoi(r.at(16));
+			cs.comm_agent = std::stoi(r.at(17));
+			cs.comm_agent_type = std::stod(r.at(18));
+			cs.comm_tax = std::stod(r.at(19));
+			cs.comm_agent_lots = std::stoi(r.at(20));
+			cs.trade_rights = std::stoi(r.at(21));
+			cs.autocloseout_mode = std::stoi(r.at(22));
+
+			std::map<int, ConGroupSec> sec;
+			sec[std::stoi(r.at(0))] = cs;
+			std::set<int> sIndex;
+			sIndex.insert(std::stoi(r.at(0)));
+
+			if (m_mt4Conn.updateGroupSec(r.at(2), sec, sIndex))
+			{
+				Logger::getInstance()->info("update group securities success.");
+			}
+			else
+			{
+				Logger::getInstance()->info("update group securities failed.");
+			}
+		}
+		response = "operate success";
+		return OK;
+	}
+	else
+	{
+		response = "operate failed.";
+		return SERVER_ERROR;
+	}
+}
+
+
+void HttpServer::readdb(ConGroupSec value,int index, std::string group, void* self)
+{
+	HttpServer* pThis = (HttpServer*)self;
+	std::map<int, ConGroupSec> sec;
+	sec[index] = value;
+	std::set<int> sIndex;
+	sIndex.insert(index);
+
+	if (pThis->m_mt4Conn.updateGroupSec(group, sec, sIndex))
+	{
+		Logger::getInstance()->info("update group securities success.");
+	}
+	else
+	{
+		Logger::getInstance()->info("update group securities failed.");
+	}
 }
