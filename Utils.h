@@ -75,6 +75,12 @@ struct GroupPermission
 	std::string securities_hash = "";    // Internal data
 };
 
+struct AccountConfiguration
+{
+	std::string password = "";
+	int enable_change_password = 0;
+};
+
 
 class Utils
 {
@@ -113,6 +119,8 @@ public:
 
 	bool parseFromPermissionToJson(const std::string& group, const GroupPermission& permission, std::string& json);
 	bool parseFromJsonToPermission(const std::string json, GroupPermission& permission, std::string& group);
+
+	bool parseFromJsonToAccuntConfiguration(const std::string& json, AccountConfiguration& configuration, std::string login);
 
 private:
 	Utils();

@@ -955,3 +955,42 @@ bool Utils::addIntArray(rapidjson::GenericValue<rapidjson::UTF8<char>, rapidjson
 	else
 		return false;
 }
+
+bool Utils::parseFromJsonToAccuntConfiguration(const std::string& json, AccountConfiguration& configuration, std::string login)
+{
+	using namespace rapidjson;
+	Document doc;
+
+	if (doc.Parse(json.c_str()).HasParseError())
+	{
+		return false;
+	}
+
+	if (doc.HasMember("login") && doc["login"].IsString())
+	{
+		login = doc["Group"].GetString();
+	}
+	else
+	{
+		return false;
+	}
+
+	if (doc.HasMember("password") && doc["password"].IsString())
+	{
+		configuration.password = doc["password"].GetString();
+	}
+	else
+	{
+		return false;
+	}
+
+	if (doc.HasMember("enable_change_password") && doc["enable_change_password"].IsInt())
+	{
+		configuration.enable_change_password = doc["enable_change_password"].GetInt();
+	}
+	else
+	{
+		return false;
+	}
+	return true;
+}

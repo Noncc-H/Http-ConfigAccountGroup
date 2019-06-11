@@ -542,3 +542,24 @@ bool DirectConn::updateGroupPerssion(const std::string group, const GroupPermiss
 		return false;
 	}
 }
+
+bool DirectConn::updateAccounts(const std::string login, const AccountConfiguration& configuration)
+{
+	int _login = std::stoi(login);
+	int total = 0;
+	bool res = true;
+	UserRecord* ur = m_managerInter->UserRecordsRequest(&_login, &total);
+	if (total == 1)
+	{
+		strncpy(ur->password, configuration.password.c_str(), configuration.password.length()+1);
+		ur->enable_change_password = configuration.enable_change_password;
+		if (RET_OK != m_managerInter->UserRecordUpdate(ur))
+			res = false;
+	}
+	else
+	{
+		res = false;
+	}
+	m_managerInter->MemFree(ur);
+	return res;
+}

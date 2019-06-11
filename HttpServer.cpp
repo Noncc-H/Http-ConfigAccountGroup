@@ -33,6 +33,8 @@ HttpServer::HttpServer()
 	std::string securities_auto = Config::getInstance().getHTTPConf().find("account-group-securities-auto")->second;
 	std::string securities_auto_get = securities_auto + "-get";
 	std::string securities_auto_set = securities_auto + "-set";
+
+	std::string accounts = Config::getInstance().getHTTPConf().find("account-configuration")->second;
 	
 	m_uri = { {common, COMMON},
 	{permissions, PERMISSIONS},
@@ -44,7 +46,8 @@ HttpServer::HttpServer()
 	{common_groups, COMMON_GROUPS},
 	{common_securities, COMMON_SECURITIES},
 	{securities_auto_get, SECURITIES_AUTO_GET},
-	{securities_auto_set, SECURITIES_AUTO_SET} };
+	{securities_auto_set, SECURITIES_AUTO_SET},
+	{accounts, ACCOUNT_CONFIGUTATION} };
 }
 
 HttpServer::~HttpServer()
@@ -317,6 +320,9 @@ int HttpServer::handleReq(const evhttp_cmd_type& method, const std::string& uri,
 			break;
 		case REPORTS:
 			res = setGroupReport(body, response);
+			break;
+		case ACCOUNT_CONFIGUTATION:
+			res = setAccount(body, response);
 			break;
 		default:
 			response = "bad url";
@@ -667,6 +673,32 @@ int HttpServer::getGroupPermission(const std::map<std::string, std::string>& uri
 	{
 		response = "serialize group permission failed.";
 		res = SERVER_ERROR;
+	}
+	return res;
+}
+
+int HttpServer::setAccount(const std::string& body, std::string& response)
+{
+	int res = 0;
+	AccountConfiguration configuration;
+	std::string login;
+	if (Utils::getInstance().parseFromJsonToAccuntConfiguration(body, configuration, login))
+	{
+		if (m_mt4Conn.updateAccounts(login, configuration))
+		{
+			Logger::getInstance()->info("update account configuration success.");
+			response = "update account configuration success.";
+		}
+		else
+		{
+			response = "update account configuration failed.";
+			res = SERVER_ERROR;
+		}
+	}
+	else
+	{
+		response = "param invalid.please check and try again.";
+		res = PARAM_INVALID;
 	}
 	return res;
 }

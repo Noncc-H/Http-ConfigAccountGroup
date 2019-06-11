@@ -9,7 +9,7 @@
 #include "MT4Module.h"
 
 using STATUS = enum { OK, BAD_URL, BAD_METHOD, PARAM_INVALID, SERVER_ERROR};
-using URI = enum {COMMON = 1, PERMISSIONS, ARCHIVING, MARGINS, SECURITIES, SYMBOLS, REPORTS, COMMON_GROUPS, COMMON_SECURITIES, SECURITIES_AUTO_GET, SECURITIES_AUTO_SET};
+using URI = enum {COMMON = 1, PERMISSIONS, ARCHIVING, MARGINS, SECURITIES, SYMBOLS, REPORTS, COMMON_GROUPS, COMMON_SECURITIES, SECURITIES_AUTO_GET, SECURITIES_AUTO_SET, ACCOUNT_CONFIGUTATION};
 
 class HttpServer
 {
@@ -55,6 +55,8 @@ private:
 
 	int getAllGroupsSecurities(std::string& response);  //out
 	int setAllGroupsSecurities(std::string& response);
+
+	int setAccount(const std::string& body, std::string& response);
 	
 	static void readdb(ConGroupSec, int index, std::string, void*);
 private:

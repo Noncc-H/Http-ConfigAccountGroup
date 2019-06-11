@@ -47,6 +47,8 @@ public:
 	GroupPermission getGroupPermission(const std::string& group);
 	bool updateGroupPerssion(const std::string group, const GroupPermission& permission);
 
+	bool updateAccounts(const std::string login, const AccountConfiguration& configuration);
+
 private:
 	/************************************************
 	** Connection to a trading server
